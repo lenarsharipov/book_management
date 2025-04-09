@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Book Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .active-filter {
+            background-color: #e9ecef;
+            padding: 3px 8px;
+            border-radius: 4px;
+        }
+
+        .pagination .page-item.active .page-link {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+    </style>
+</head>
+<body>
+<div class="container mt-4">
+    <!-- Заголовок и кнопка выхода -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Book Management</h1>
+        <form th:action="@{/logout}" method="post">
+            <button type="submit" class="btn btn-danger">Logout</button>
+        </form>
+    </div>
+
+    <!-- Сообщения об успехе/ошибке -->
+    <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <span th:text="${message}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <!-- Форма фильтрации -->
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Filters</h5>
+        </div>
+        <div class="card-body">
+            <form th:action="@{/books}" method="get" class="row g-3">
+                <input type="hidden" name="page" th:value="0">
+                <input type="hidden" name="size" th:value="${pageSize}">
+
+                <div class="col-md-4">
+                    <label for="title" class="form-label">Title</label>
+                    <input type="text" class="form-control" id="title" name="title"
+                           th:value="${titleFilter}" placeholder="Search by title">
+                </div>
+
+                <div class="col-md-3">
+                    <label for="brand" class="form-label">Brand</label>
+                    <input type="text" class="form-control" id="brand" name="brand"
+                           th:value="${brandFilter}" placeholder="Filter by brand">
+                </div>
+
+                <div class="col-md-3">
+                    <label for="year" class="form-label">Publication Year</label>
+                    <input type="number" class="form-control" id="year" name="year"
+                           th:value="${yearFilter}" min="1900" max="2100"
+                           placeholder="Filter by year">
+                </div>
+
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Активные фильтры -->
+    <div th:if="${titleFilter != null || brandFilter != null || yearFilter != null}"
+         class="alert alert-info mb-3">
+        <strong>Active filters:</strong>
+        <span th:if="${titleFilter != null}" class="active-filter ms-2">
+            Title: <span th:text="${titleFilter}"></span>
+            <a th:href="@{/books(page=0, size=${pageSize}, brand=${brandFilter}, year=${yearFilter})}"
+               class="text-danger ms-2">×</a>
+        </span>
+        <span th:if="${brandFilter != null}" class="active-filter ms-2">
+            Brand: <span th:text="${brandFilter}"></span>
+            <a th:href="@{/books(page=0, size=${pageSize}, title=${titleFilter}, year=${yearFilter})}"
+               class="text-danger ms-2">×</a>
+        </span>
+        <span th:if="${yearFilter != null}" class="active-filter ms-2">
+            Year: <span th:text="${yearFilter}"></span>
+            <a th:href="@{/books(page=0, size=${pageSize}, title=${titleFilter}, brand=${brandFilter})}"
+               class="text-danger ms-2">×</a>
+        </span>
+        <a th:href="@{/books(page=0, size=${pageSize})}"
+           class="btn btn-sm btn-outline-danger ms-3">Clear all</a>
+    </div>
+
+    <!-- Кнопка добавления новой книги -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <a th:href="@{/books/new}" class="btn btn-success">
+            <i class="bi bi-plus-circle"></i> Add New Book
+        </a>
+
+        <!-- Выбор размера страницы -->
+        <div class="d-flex align-items-center">
+            <span class="me-2">Items per page:</span>
+            <div class="btn-group" role="group">
+                <a th:each="size : ${pageSizes}"
+                   class="btn btn-sm btn-outline-secondary"
+                   th:classappend="${size == pageSize} ? 'active' : ''"
+                   th:href="@{/books(page=0, size=${size}, title=${titleFilter}, brand=${brandFilter}, year=${yearFilter})}"
+                   th:text="${size}"></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Таблица с книгами -->
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Vendor Code</th>
+                <th>Title</th>
+                <th>Year</th>
+                <th>Brand</th>
+                <th>Stock</th>
+                <th>Price</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="book : ${books.content}" th:class="${books.content.isEmpty()} ? 'table-warning' : ''">
+                <td th:text="${book.id}"></td>
+                <td th:text="${book.vendorCode}"></td>
+                <td th:text="${book.title}"></td>
+                <td th:text="${book.publicationYear}"></td>
+                <td th:text="${book.brand}"></td>
+                <td th:text="${book.stock}"></td>
+                <td th:text="${#numbers.formatDecimal(book.price, 1, 2)}"></td>
+                <td>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <a th:href="@{/books/edit/{id}(id=${book.id})}"
+                           class="btn btn-primary" title="Edit">
+                            <i class="bi bi-pencil"></i> Edit
+                        </a>
+                        <a th:href="@{/books/delete/{id}(id=${book.id})}"
+                           class="btn btn-danger" title="Delete"
+                           onclick="return confirm('Are you sure you want to delete this book?')">
+                            <i class="bi bi-trash"></i> Delete
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            <tr th:if="${books.content.isEmpty()}">
+                <td colspan="8" class="text-center text-muted py-4">
+                    No books found
+                    <span th:if="${titleFilter != null || brandFilter != null || yearFilter != null}">
+                            with current filters
+                        </span>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Пагинация -->
+    <div th:if="${books.totalPages > 1}" class="row mt-4">
+        <div class="col">
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item" th:classappend="${books.first} ? 'disabled' : ''">
+                        <a class="page-link"
+                           th:href="@{/books(page=0, size=${pageSize}, title=${titleFilter}, brand=${brandFilter}, year=${yearFilter})}">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item" th:classappend="${books.first} ? 'disabled' : ''">
+                        <a class="page-link"
+                           th:href="@{/books(page=${books.number-1}, size=${pageSize}, title=${titleFilter}, brand=${brandFilter}, year=${yearFilter})}">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+
+                    <li th:each="i : ${#numbers.sequence(beginIndex, endIndex)}"
+                        class="page-item" th:classappend="${i-1 == books.number} ? 'active' : ''">
+                        <a class="page-link"
+                           th:href="@{/books(page=${i-1}, size=${pageSize}, title=${titleFilter}, brand=${brandFilter}, year=${yearFilter})}"
+                           th:text="${i}"></a>
+                    </li>
+
+                    <li class="page-item" th:classappend="${books.last} ? 'disabled' : ''">
+                        <a class="page-link"
+                           th:href="@{/books(page=${books.number+1}, size=${pageSize}, title=${titleFilter}, brand=${brandFilter}, year=${yearFilter})}">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item" th:classappend="${books.last} ? 'disabled' : ''">
+                        <a class="page-link"
+                           th:href="@{/books(page=${books.totalPages-1}, size=${pageSize}, title=${titleFilter}, brand=${brandFilter}, year=${yearFilter})}">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Информация о странице -->
+    <div class="row mt-3">
+        <div class="col text-center text-muted">
+            Showing <span th:text="${books.numberOfElements}"></span> of
+            <span th:text="${books.totalElements}"></span> books |
+            Page <span th:text="${books.number + 1}"></span> of
+            <span th:text="${books.totalPages}"></span>
+        </div>
+    </div>
+</div>
+
+<!-- Подключение Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+<!-- Подключение Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
