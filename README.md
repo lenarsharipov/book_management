@@ -7,7 +7,22 @@
 5. Поддерживать пагинацию и фильтрацию по title, brand, year
 6. REST API: GET /api/books, POST /api/books, PUT /api/books/{id}, DELETE /api/books/{id}
 
+## Окружение:
+### Java 21
+### Maven 3.9.9
+
+## Технологии:
+### Java
+### Spring Boot
+### Spring Security
+### Validation
+### Thymeleaf
+### Lombok
+### H2 Database
+
+## Работа с приложением
 Приложение запускается на порту 8080
+
 InMemory user details:
 
 login: user
